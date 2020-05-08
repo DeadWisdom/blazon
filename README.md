@@ -59,7 +59,7 @@ If `user_data` does not conform, it will raise a ValidationError, which is a sub
 >>> user_schema({'name': 'Beatrice'})
 Traceback (most recent call last):
     ...
-blazon.helpers.ConstraintFailure: required -- must have the required keys: ['name', 'email']
+blazon.helpers.ConstraintFailure: required - must have the required keys: ['name', 'email']
 ```
 
 Blazon tries to _convert_ `user_data`, even if it doesn't actually match the schema. This is fits
@@ -72,7 +72,7 @@ SchemaValidationResult:Could not validate the instance against the schema.
 Instance:
   {'name': 'Bob'}
 Errors:
-  required -- must have the required keys: ['name', 'email']
+  required - must have the required keys: ['name', 'email']
 ```
 
 The `Schema.validate()` method returns a `SchemaValidationResult` object which will evaluate as
