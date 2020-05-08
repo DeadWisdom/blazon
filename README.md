@@ -4,7 +4,7 @@ Blazon is a library for assuring data structure and format.
 
 It is useful for both processing runtime data like from a web request, and also for type-hinting.
 It defines a general schema system that can be translated into multiple other systems, notably
-JSON Schema. And includes tools to transform data, and translate schemas between systems.
+JSON Schema. It also includes tools to transform data, and soon, translate schemas between systems.
 
 _Project Status_: This project is currently in a review stage. All comments are welcome, please
 leave them as issues on the [github project](https://github.com/DeadWisdom/blazon).
