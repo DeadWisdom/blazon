@@ -17,23 +17,23 @@ that it comes out as right shape.
 
 A simple example:
 
-    ```python
-    import blazon, json
+```python
+import blazon, json
 
-    with open("users.json") as o:
-      user_data = json.load(o)
+with open("users.json") as o:
+  user_data = json.load(o)
 
-    user_schema = blazon.json.schema({
-      'properties': {
-        'name': {'type': 'string'},
-        'email': {'type': 'string', 'format': 'email'}
-        'age': {'type': 'number', 'minValue': 0, 'default': 42},
-      },
-      'required': ['name', 'email']
-    })
+user_schema = blazon.json.schema({
+  'properties': {
+    'name': {'type': 'string'},
+    'email': {'type': 'string', 'format': 'email'}
+    'age': {'type': 'number', 'minValue': 0, 'default': 42},
+  },
+  'required': ['name', 'email']
+})
 
-    users = [user_schema(item) for item in user_data]
-    ```
+users = [user_schema(item) for item in user_data]
+```
 
 Now we can be sure that all users have 3 properties:
 
