@@ -230,7 +230,7 @@ If the systems can be expressed generally, we can pass not only data seamlessly 
 systems, but also the schemas themselves. This will let us connect heterogeneous systems simply
 by mapping schemas and constraints from one to the next.
 
-## Features Missing
+## Features Missing (Still in Progress)
 
 - Marshalling data
 - Schema \$ref resolution
