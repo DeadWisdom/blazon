@@ -117,8 +117,8 @@ practice to name partially validated schemas as such, or otherwise track them th
 ## Schematics
 
 Schematics are a way of representing schemas as Python classes. They work like dataclasses, but
-they also seamlessly interact with an environment like JSON Schema, meaning you can easily represent
-their schema. Since they are python types, they are useful for type-hinting.
+they also seamlessly interact with an environment, e.g. JSON Schema, meaning you can easily represent
+a JSON schema as python classes. Since they are python types, they are useful for type-hinting.
 
 An example:
 
@@ -140,7 +140,7 @@ damage(bob, 10)
 assert bob.health == 90
 ```
 
-So this Character class now makes enforces specific properties. As might gather, `id` is a string,
+So this Character class now enforces specific properties. As one might gather, `id` is a string,
 with a default value that is a random shortuuid; `name` is a required string, `health` is an integer
 that may not go below 0, will default to 100; and `tags` is a list of strings, though it is not
 required, since lists default to an empty list as their value.
