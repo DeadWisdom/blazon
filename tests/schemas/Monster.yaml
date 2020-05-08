@@ -1,0 +1,7 @@
+name: Monster
+properties:
+  name:
+    type: string
+  level:
+    type: number
+    default: 1

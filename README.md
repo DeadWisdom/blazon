@@ -6,6 +6,9 @@ It is useful for both processing runtime data like from a web request, and also 
 It defines a general schema system that can be translated into multiple other systems, notably
 JSON Schema. And includes tools to transform data, and translate schemas between systems.
 
+_Project Status_: This project is currently in a review stage. All comments are welcome, please
+leave them as issues on the [github project](https://github.com/DeadWisdom/blazon).
+
 ## Data Conversion
 
 Unlike most JSON Schema tools, Blazon's primary goal is to _convert_ the data instead of merely
@@ -112,13 +115,13 @@ their schema. Finally, since they are python types, they are useful for type-hin
 An example:
 
 ```python
-from blazon import Schematic, fields
-from shortuuid import shortuuid
+from blazon import Schematic, field
+from shortuuid import uuid
 
 class Character(Schematic):
     name: str
-    id : str = fields.Field(default_fn=shortuuid)
-    health: int = fields.Field(min_value=0, default=100)
+    id : str = field(default_factory=uuid)
+    health: int = field(minimum=0, default=100)
     tags: [str]
 
 def damage(char: Character, amount : int):
@@ -126,6 +129,7 @@ def damage(char: Character, amount : int):
 
 bob = Character(name="Bob")
 damage(bob, 10)
+assert bob.health == 90
 ```
 
 So this Character class now makes enforces specific properties. As might gather, `id` is a string,
@@ -177,24 +181,24 @@ They can also simply use any JSON Schema definition that you give them, for inst
 in a yaml file.
 
 ```yaml
-# monster.yaml
+# Monster.yaml
 name: Monster
 properties:
-    name:
+  name:
     type: string
-    level:
+  level:
     type: number
     default: 1
 ```
 
 ```python
-from blazon import Schematic, Schema
+from blazon import Schematic, json
 
 class Monster(Schematic):
-    __schema__ = Schema.from_file('monster.yaml')
+    __schema__ = json.from_file('Monster.yaml')
 
 kate_monster = Monster(name="Kate")
-print(kate_monster.level)   # 1
+assert kate_monster.level == 1
 ```
 
 You could likewise use a json file.
@@ -208,7 +212,7 @@ interact with it, the same:
 ## Environment
 
 Blazon supports multiple "environments". Each environment can use different constraints, types, and
-named schemas. Currently the only two environments out of the box are called `blazon.json_schema`
+named schemas. Currently the only two environments out of the box are called `blazon.json`
 and `blazon.native` for using expressing JSON Schemas and a similar native python systems,
 respectively.
 
@@ -218,7 +222,8 @@ Aspects that are tracked in environments:
 - Inflection: does the system use camel-case, underscores, etc.
 - Primitive Types: e.g. int, string, array, object, etc.
 - Constraints: The various constraints defined like 'required', 'minValue', 'properties', etc.
-- Maps to other environment: To allow marshalling data from one environment to the next
+- Maps to other environment: To allow marshalling data and translating schemas from one environment
+  to the next
 
 The hope is to grow our environments to express many more systems, e.g. Postgres, AWS DynamoDB,
 Protocol Buffers, etc. Every schema system that can be distilled similarly as a set of a

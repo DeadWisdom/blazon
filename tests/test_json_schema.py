@@ -1,8 +1,8 @@
 import pytest
-from blazon.environments import json_schema
+from blazon import json
 from blazon import ValidationError
 
-schema = json_schema.schema
+schema = json.schema
 
 
 ### All Primitive Types ###
@@ -441,19 +441,19 @@ def test_not():
 def test_format_toggle():
     s = schema({"type": "string", "format": "datetime"})
 
-    json_schema.ignore_formats = True
+    json.ignore_formats = True
     s.compile()
     assert s.validate("not a time")
 
-    json_schema.ignore_formats = False
+    json.ignore_formats = False
     s.compile()
     assert not s.validate("not a time")
 
-    json_schema.ignore_these_formats = ["dateTime"]
+    json.ignore_these_formats = ["dateTime"]
     s.compile()
     assert s.validate("not a time")
 
-    json_schema.ignore_these_formats = []
+    json.ignore_these_formats = []
     s.compile()
     assert not s.validate("not a time")
 
