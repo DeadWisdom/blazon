@@ -53,7 +53,7 @@ is a callable that converts the data.
 
 ## Validation
 
-If `user_data` does not conform, it will raise a ValidationError, which is a subclass of ValueError:
+If `user_data` does not conform, it will raise a ConstraintFailure, which is a subclass of ValueError:
 
 ```python
 >>> user_schema({'name': 'Beatrice'})
@@ -149,13 +149,13 @@ This Character schematic can then be used normally, and is validated as used:
 
 ```python
 >>> char = Character()
-ValidationError: ...
+ConstraintFailure: ...
 
 >>> char = Character(name="Brenda", health=21)
 Character(name="Brenda")
 
 >>> char.health = -5
-ValidationError: ...
+ConstraintFailure: ...
 ```
 
 Schematics act a bit different from dataclasses to make them easier to work with. First, they don't
