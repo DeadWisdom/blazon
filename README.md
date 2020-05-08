@@ -111,22 +111,22 @@ their schema. Finally, since they are python types, they are useful for type-hin
 
 An example:
 
-    ```python
-    from blazon import Schematic, fields
-    from shortuuid import shortuuid
+```python
+from blazon import Schematic, fields
+from shortuuid import shortuuid
 
-    class Character(Schematic):
-        name: str
-        id : str = fields.Field(default_fn=shortuuid)
-        health: int = fields.Field(min_value=0, default=100)
-        tags: [str]
+class Character(Schematic):
+    name: str
+    id : str = fields.Field(default_fn=shortuuid)
+    health: int = fields.Field(min_value=0, default=100)
+    tags: [str]
 
-    def damage(char: Character, amount : int):
-        char.health -= amount
+def damage(char: Character, amount : int):
+    char.health -= amount
 
-    bob = Character(name="Bob")
-    damage(bob, 10)
-    ```
+bob = Character(name="Bob")
+damage(bob, 10)
+```
 
 So this Character class now makes enforces specific properties. As might gather, `id` is a string,
 with a default value that is a random shortuuid; `name` is a required string, `health` is an integer
@@ -176,26 +176,26 @@ Speaking of partials, we can also create partial schematics:
 They can also simply use any JSON Schema definition that you give them, for instance one that is
 in a yaml file.
 
-    ```yaml
-    # monster.yaml
-    name: Monster
-    properties:
-      name:
-        type: string
-      level:
-        type: number
-        default: 1
-    ```
+```yaml
+# monster.yaml
+name: Monster
+properties:
+    name:
+    type: string
+    level:
+    type: number
+    default: 1
+```
 
-    ```python
-    from blazon import Schematic, Schema
+```python
+from blazon import Schematic, Schema
 
-    class Monster(Schematic):
-        __schema__ = Schema.from_file('monster.yaml')
+class Monster(Schematic):
+    __schema__ = Schema.from_file('monster.yaml')
 
-    kate_monster = Monster(name="Kate")
-    print(kate_monster.level)   # 1
-    ```
+kate_monster = Monster(name="Kate")
+print(kate_monster.level)   # 1
+```
 
 You could likewise use a json file.
 
