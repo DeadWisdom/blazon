@@ -70,7 +70,7 @@ most use-cases, but if you are trying to specifically validate rather than conve
 SchemaValidationResult:Could not validate the instance against the schema.
 
 Instance:
-  {'name': 'Bob'}
+  {'name': 'Beatrice'}
 Errors:
   required - must have the required keys: ['name', 'email']
 ```
