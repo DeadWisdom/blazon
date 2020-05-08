@@ -77,7 +77,7 @@ class ConstraintFailure(ValidationError):
         self.schema = schema
 
     def __str__(self):
-        err = self.message
+        err = self.message or ''
         parts = [err]
         if self.path:
             path = "/".join(self.path)
@@ -126,7 +126,7 @@ class SchemaValidationResult(ValidationError):
         ]
 
         for constraint, err in self:
-            lines.append(f"  {err!r}")
+            lines.append(f"  {err!s}")
 
         return "\n".join(lines)
 

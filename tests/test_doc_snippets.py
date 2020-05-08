@@ -63,3 +63,5 @@ def test_json():
     assert all(x['name'] for x in users)
     assert all('@' in x['email'] for x in users)
     assert all(x['age'] >= 0 for x in users)
+
+    user = user_schema({'name': 'Bob'})

@@ -112,19 +112,38 @@ class Schema:
         clone.compile()
         return clone
 
+    def build_error(self, name, err, instance):
+        constraint = self.env.get_constraint(name)
+        value = self.value[name]
+        if not isinstance(err, ConstraintFailure):
+            tb = sys.exc_info()[2]
+            err = ConstraintFailure(message=str(err), path=[name], sub_errors=[err]).with_traceback(tb)
+        else:
+            err.path.insert(0, name)
+        
+        if not err.message:
+            err.message = constraint.description.format(instance=instance, value=value)
+        
+        err.schema = self
+
+        return err
+
     def validate(self, instance: Any, partial: bool = False) -> SchemaValidationResult:
         results = {}
 
         for name, c in self.constraints.items():
             try:
                 c(instance, convert=False, partial=partial)
-            except ValueError as err:
-                results[c] = err
-                if name == "type":
-                    break
             except ConstraintNotApplicable as err:
                 if self.strict:
-                    results[c] = err
+                    err = self.build_error(name, err, instance)
+                    results[name] = err
+            except ValueError as err:
+                err = self.build_error(name, err, instance)
+                results[name] = err
+                # Break on type because they everything else will break
+                if name == "type":
+                    break
 
         return SchemaValidationResult(self, instance, results)
 
@@ -134,16 +153,8 @@ class Schema:
                 instance = c(instance, convert=True, partial=partial)
             except ConstraintNotApplicable:
                 if self.strict:
-                    raise ConstraintFailure(
-                        "constraint not applicable to type", c, sub_errors=[err], path=[name],
-                    ).with_traceback(tb)
-            except (ValueError, AssertionError) as err:
-                tb = sys.exc_info()[2]
-                err = ConstraintFailure(c, sub_errors=[err], path=[name],).with_traceback(tb)
-                raise err
-            except ConstraintFailure as e:
-                e.schema = self
-                e.path.insert(0, name)
-                raise
+                    raise self.build_error(name, err, instance)
+            except (ValueError, AssertionError, ConstraintFailure) as err:
+                raise self.build_error(name, err, instance)
 
         return instance

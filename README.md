@@ -11,7 +11,7 @@ leave them as issues on the [github project](https://github.com/DeadWisdom/blazo
 
 ## Data Conversion
 
-Unlike most JSON Schema tools, Blazon's primary goal is to _convert_ the data instead of merely
+Unlike most schema tools, Blazon's primary goal is to _convert_ the data instead of merely
 validating it-- though it can do both. The idea is that usually we don't care whether the data
 coming in is correct, we just want it to be correct by the time we use it.
 
@@ -53,40 +53,39 @@ is a callable that converts the data.
 
 ## Validation
 
-If user_data does not conform, it will raise a ValidationError, which is a subclass of ValueError:
+If `user_data` does not conform, it will raise a ValidationError, which is a subclass of ValueError:
 
 ```python
->>> user_schema(user_data)
+>>> user_schema({'name': 'Beatrice'})
 Traceback (most recent call last):
     ...
-ValidationError: name is required
+blazon.helpers.ConstraintFailure: required -- must have the required keys: ['name', 'email']
 ```
 
-However, since Blazon's general use case is conversion, user_data might not actually conform if it is
-reasonably able to be converted to match the schema. This is fits most use-cases, but if you are
-trying to specifically validate rather than convert, you can use `validate()`:
+Blazon tries to _convert_ `user_data`, even if it doesn't actually match the schema. This is fits
+most use-cases, but if you are trying to specifically validate rather than convert, you can use `validate()`:
 
 ```python
->>> user_schema.validate(user_data)
-Traceback (most recent call last):
-    ...
-ValidationError: name is required
-```
+>>> print( user_schema.validate({'name': 'Beatrice'}) )
+SchemaValidationResult:Could not validate the instance against the schema.
 
-Either way we ensure that `user_data` matches our schema but the latter will be picky about the
-input.
-
-Also you can simply query to see if it validates:
-
-```python
->>> if user_schema.validate(user_data):
-...    print("Valid!")
-Valid!
+Instance:
+  {'name': 'Bob'}
+Errors:
+  required -- must have the required keys: ['name', 'email']
 ```
 
 The `Schema.validate()` method returns a `SchemaValidationResult` object which will evaluate as
 truthy if, and only if, validation was successful. It also has information about each field or
 constraint that failed.
+
+Also you can simply query to see if it validates:
+
+```python
+>>> if user_schema.validate({'name': 'Beatrice', 'email': 'beatrice@example.com'}):
+...    print("Valid!")
+Valid!
+```
 
 Note: if your goal is simply JSON validation, and don't need the flexibility or conversion offered
 by Blazon, then [fastjsonschema](https://github.com/horejsek/python-fastjsonschema) is around 2-5
@@ -94,11 +93,11 @@ times faster.
 
 ## Partial Conversion / Validation
 
-We can also do "partial" validation. Often, you want to represent a partial objec: an object that
-doesn't have all of its fields. Whether that's from an update, a PATCH operation, or because you
-have a representation that is specifically omitting pieces that are memory intensive or too much to
-put on the wire. In most systems you have to represent this with a separate schema, and that causes
-all sorts of trouble and is just no fun.
+We can also do "partial" validation. Often, you want to represent a partial object: an object that
+doesn't have all of its fields, even if some are required. Whether that's from an update, a PATCH
+operation, or because you have a representation that is specifically omitting pieces that are memory
+intensive or too much to put on the wire. In most systems you have to represent this with a separate
+schema, and that causes all sorts of trouble and is just no fun.
 
 It's real easy, we simply add `partial=True` to our conversion or validation methods, and it simply
 doesn't run validation with constraints like 'required'. Using the `user_schema` from above:
@@ -159,35 +158,17 @@ Character(name="Brenda")
 ValidationError: ...
 ```
 
-We can easily export it:
+Schematics act a bit different from dataclasses to make them easier to work with. First, they don't
+need their required fields during input, they can be partials:
 
 ```python
->>> char = Character(name="Tom", id="vytxeTZskVKR7C7WgdSP3d")
-Character(name="Tom")
-
->>> char.marshal('json')
-{"name": "Tom", "health": 100, "id": "vytxeTZskVKR7C7WgdSP3d", "tags": []}
-
->>> char.marshal('json', partial=True)
-{"name": "Tom", "id": "vytxeTZskVKR7C7WgdSP3d"}
-```
-
-As you can see, we get our data now as a jsonable dictionary. When we marshal it, we get all the
-data, but we can also use `partial=True` to get only the fields we set and are not default.
-
-Speaking of partials, we can also create partial schematics:
-
-```python
->>> char = Character.partial(age=21)
+>>> char = Character(age=21)
 Character(age=21)
 
->>> char.is_partial()
-True
-
->>> char.is_valid()
+>>> bool(char.validate())
 False
 
->>> char.is_valid(partial=True)
+>>> char.validate(partial=True)
 True
 ```
 
@@ -251,6 +232,7 @@ by mapping schemas and constraints from one to the next.
 
 ## Features Missing
 
+- Marshalling data
 - Schema \$ref resolution
 - Generating JSON Schemas with $ref and other $special properties
 - Type-hint plugins for mypy and others to treat the objects like dataclasses based on the schemas
