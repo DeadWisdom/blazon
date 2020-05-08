@@ -233,6 +233,15 @@ If the systems can be expressed generally, we can pass not only data seamlessly 
 systems, but also the schemas themselves. This will let us connect heterogeneous systems simply
 by mapping schemas and constraints from one to the next.
 
+## Features Missing
+
+- Schema $ref resolution
+- Generating JSON Schemas with $ref and other $special properties
+- Type-hint plugins for mypy and others to treat the objects like dataclasses based on the schemas
+- Schema translation
+
+... I think that's it.
+
 # Advanced Topics
 
 These advanced topics go into the various actions that are taken on data in Blazon. We try to
