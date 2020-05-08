@@ -16,7 +16,7 @@ validating it-- though it can do both. The idea is that usually we don't care wh
 coming in is correct, we just want it to be correct by the time we use it.
 
 An analogy: I don't care about the shape of the cookie dough as it enters the cutter, I only care
-that it comes out as right shape.
+that it comes out as the right shape.
 
 A simple example:
 
@@ -24,18 +24,22 @@ A simple example:
 import blazon, json
 
 with open("users.json") as o:
-  user_data = json.load(o)
+    user_data = json.load(o)
 
 user_schema = blazon.json.schema({
-  'properties': {
+    'properties': {
     'name': {'type': 'string'},
-    'email': {'type': 'string', 'format': 'email'}
+    'email': {'type': 'string', 'format': 'email'},
     'age': {'type': 'number', 'minValue': 0, 'default': 42},
-  },
-  'required': ['name', 'email']
+    },
+    'required': ['name', 'email']
 })
 
 users = [user_schema(item) for item in user_data]
+
+assert all(x['name'] for x in users)
+assert all('@' in x['email'] for x in users)
+assert all(x['age'] >= 0 for x in users)
 ```
 
 Now we can be sure that all users have 3 properties:
@@ -44,40 +48,44 @@ Now we can be sure that all users have 3 properties:
 - age: a number value that is 0 or higher
 - email: a string that is formatted like an email
 
-`blazon.json.schema()` takes any JSON Schema as its argument, and returns a Schema() object, which
+`blazon.json.schema()` takes any JSON Schema as its argument, and returns a `Schema` object, which
 is a callable that converts the data.
 
 ## Validation
 
 If user_data does not conform, it will raise a ValidationError, which is a subclass of ValueError:
 
-    >>> user_schema(user_data)
-    Traceback (most recent call last):
-        ...
-    ValidationError: name is required
+```python
+>>> user_schema(user_data)
+Traceback (most recent call last):
+    ...
+ValidationError: name is required
+```
 
 However, since Blazon's general use case is conversion, user_data might not actually conform if it is
 reasonably able to be converted to match the schema. This is fits most use-cases, but if you are
-trying to specifically validate rather than convert, you can use `validate()`":
+trying to specifically validate rather than convert, you can use `validate()`:
 
-TODO: FIX THIS
-
-    >>> user_schema.validate(user_data)
-    Traceback (most recent call last):
-        ...
-    ValidationError: name is required
+```python
+>>> user_schema.validate(user_data)
+Traceback (most recent call last):
+    ...
+ValidationError: name is required
+```
 
 Either way we ensure that `user_data` matches our schema but the latter will be picky about the
 input.
 
 Also you can simply query to see if it validates:
 
-    >>> if user_schema.validate(user_data):
-    ...    print("Valid!")
-    Valid!
+```python
+>>> if user_schema.validate(user_data):
+...    print("Valid!")
+Valid!
+```
 
-The `Schema.validate()` method actually returns a `SchemaValidationResult` object which will only
-evaluate as truthy if validation was successful. It also has information about each field or
+The `Schema.validate()` method returns a `SchemaValidationResult` object which will evaluate as
+truthy if, and only if, validation was successful. It also has information about each field or
 constraint that failed.
 
 Note: if your goal is simply JSON validation, and don't need the flexibility or conversion offered
@@ -86,19 +94,21 @@ times faster.
 
 ## Partial Conversion / Validation
 
-We can also do "partial" validation. Often, you want to represent half of an object,
-that is an object that doesn't have all of its fields. Whether that's from an update, a PATCH
-operation, or because you have a representation that is specifically omitting pieces that
-are memory intensive or too much to put on the wire. In most systems you have to represent this with
-a separate schema, and that causes all sorts of trouble and is just no fun.
+We can also do "partial" validation. Often, you want to represent a partial objec: an object that
+doesn't have all of its fields. Whether that's from an update, a PATCH operation, or because you
+have a representation that is specifically omitting pieces that are memory intensive or too much to
+put on the wire. In most systems you have to represent this with a separate schema, and that causes
+all sorts of trouble and is just no fun.
 
 It's real easy, we simply add `partial=True` to our conversion or validation methods, and it simply
 doesn't run validation with constraints like 'required'. Using the `user_schema` from above:
 
-    >>> partial_user = user_schema({
-      'email': 'person@example.com',
-      'age': 24
-    }, partial=true)
+```python
+>>> partial_user = user_schema({
+    'email': 'person@example.com',
+    'age': 24
+}, partial=true)
+```
 
 And so it doesn't raise an error even though "name" is a required field.
 
@@ -109,8 +119,7 @@ practice to name partially validated schemas as such, or otherwise track them th
 
 Schematics are a way of representing schemas as Python classes. They work like dataclasses, but
 they also seamlessly interact with an environment like JSON Schema, meaning you can easily represent
-their schema. Finally, since they are python types, they are useful for type-hinting via the
-`typing` module.
+their schema. Since they are python types, they are useful for type-hinting.
 
 An example:
 
@@ -139,43 +148,48 @@ required, since lists default to an empty list as their value.
 
 This Character schematic can then be used normally, and is validated as used:
 
-    >>> char = Character()
-    ValidationError: ...
+```python
+>>> char = Character()
+ValidationError: ...
 
-    >>> char = Character(name="Brenda", health=21)
-    Character(name="Brenda")
+>>> char = Character(name="Brenda", health=21)
+Character(name="Brenda")
 
-    >>> char.health = -5
-    ValidationError: ...
+>>> char.health = -5
+ValidationError: ...
+```
 
 We can easily export it:
 
-    >>> char = Character(name="Tom", id="vytxeTZskVKR7C7WgdSP3d")
-    Character(name="Tom")
+```python
+>>> char = Character(name="Tom", id="vytxeTZskVKR7C7WgdSP3d")
+Character(name="Tom")
 
-    >>> char.marshal('json')
-    {"name": "Tom", "health": 100, "id": "vytxeTZskVKR7C7WgdSP3d", "tags": []}
+>>> char.marshal('json')
+{"name": "Tom", "health": 100, "id": "vytxeTZskVKR7C7WgdSP3d", "tags": []}
 
-    >>> char.marshal('json', partial=True)
-    {"name": "Tom", "id": "vytxeTZskVKR7C7WgdSP3d"}
+>>> char.marshal('json', partial=True)
+{"name": "Tom", "id": "vytxeTZskVKR7C7WgdSP3d"}
+```
 
 As you can see, we get our data now as a jsonable dictionary. When we marshal it, we get all the
 data, but we can also use `partial=True` to get only the fields we set and are not default.
 
 Speaking of partials, we can also create partial schematics:
 
-    >>> char = Character.partial(age=21)
-    Character(age=21)
+```python
+>>> char = Character.partial(age=21)
+Character(age=21)
 
-    >>> char.is_partial()
-    True
+>>> char.is_partial()
+True
 
-    >>> char.is_valid()
-    False
+>>> char.is_valid()
+False
 
-    >>> char.is_valid(partial=True)
-    True
-    ```
+>>> char.is_valid(partial=True)
+True
+```
 
 They can also simply use any JSON Schema definition that you give them, for instance one that is
 in a yaml file.
@@ -206,8 +220,10 @@ You could likewise use a json file.
 Finally, as you can see, you can directly assign the `__schema__` to the Schematic, and we can
 interact with it, the same:
 
-    >>> Character.__schema__
-    Schema({ "name": "Character", ... })
+```python
+>>> Character.__schema__
+Schema({ "name": "Character", ... })
+```
 
 ## Environment
 
@@ -232,6 +248,15 @@ constraints should be able to be expressed in Blazon and that's when the fun beg
 If the systems can be expressed generally, we can pass not only data seamlessly between various
 systems, but also the schemas themselves. This will let us connect heterogeneous systems simply
 by mapping schemas and constraints from one to the next.
+
+## Features Missing
+
+- Schema \$ref resolution
+- Generating JSON Schemas with $ref and other $special properties
+- Type-hint plugins for mypy and others to treat the objects like dataclasses based on the schemas
+- Schema translation
+
+... I think that's it.
 
 # Advanced Topics
 
