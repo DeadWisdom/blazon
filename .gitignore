@@ -1,5 +1,6 @@
 __pycache__
 .vscode
+/pip-wheel-metadata
 /env
 blazon.egg-info
 /.*

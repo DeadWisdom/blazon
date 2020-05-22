@@ -77,7 +77,7 @@ class ConstraintFailure(ValidationError):
         self.schema = schema
 
     def __str__(self):
-        err = self.message or ''
+        err = self.message or ""
         parts = [err]
         if self.path:
             path = "/".join(self.path)
@@ -140,3 +140,7 @@ class ConstraintKeyError(RuntimeWarning):
 
 class ConstraintNotApplicable(RuntimeWarning):
     """A constraint was added to a schema but doesn't apply"""
+
+
+class SchemaCompilationError(RuntimeError):
+    """An error durring schema compilation"""

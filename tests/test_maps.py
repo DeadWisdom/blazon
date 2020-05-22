@@ -77,6 +77,10 @@ def test_additional_properties():
     assert s.validate({"name": "carol", "review-1": 4, "review-2": 3, "additional": [1, 2, 3]})
     assert not s.validate({"name": "carol", "review-1": 4, "review-2": 3, "additional": 4})
 
+    s = blazon.schema({"entries": {"name": {"type": str}}, "additionalEntries": False,})
+
+    assert not s.validate({"name": "carol", "additional": "yeah"})
+
 
 def test_dependencies():
     s = blazon.schema({"dependencies": {"credit_card": ["billing_address"]}})

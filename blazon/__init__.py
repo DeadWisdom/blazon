@@ -1,4 +1,4 @@
-from .helpers import ValidationError
+from .helpers import ValidationError, ConstraintFailure
 from .environment import native
 from .schematic import Schematic, field
 

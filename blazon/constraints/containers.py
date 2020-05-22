@@ -86,6 +86,13 @@ def min_items(schema, value):
     return handler
 
 
+def unique_set(items):
+    try:
+        return set(items)
+    except TypeError:
+        return list({repr(i): i for i in items}.values())
+
+
 @register(description="sequence must not have all unique items", require=[Sized], exclude=[str])
 def unique_items(schema, value):
     if "set" in schema.env.primitives:
@@ -95,8 +102,8 @@ def unique_items(schema, value):
 
     def handler(instance, convert=False, partial=False):
         if convert:
-            return return_type(set(instance))
-        if len(set(instance)) != len(instance):
+            return return_type(unique_set(instance))
+        if len(unique_set(instance)) != len(instance):
             raise ConstraintFailure()
 
     return handler

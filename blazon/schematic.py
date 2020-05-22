@@ -22,7 +22,7 @@ class Field:
             self.value["default_factory"] = default_factory
         if type is not Undefined:
             if isinstance(type, list):
-                self.value['type'] = {'type': list, 'items': type[0]}
+                self.value["type"] = {"type": list, "items": type[0]}
             else:
                 self.value["type"] = type
         self.value.update(kwargs)
@@ -45,6 +45,8 @@ class SchematicType(type):
         if Schematic is not None:
             new_cls.__schema__ = build_schema(new_cls, namespace.get("__schema__"))
             new_cls.__schema_fields__ = build_fields(new_cls)
+            new_cls.__schema__.env.schematics[name] = new_cls
+
         return new_cls
 
 
@@ -80,8 +82,8 @@ class Schematic(metaclass=SchematicType):
         self.__dict__.clear()
         self.__dict__.update(self.__schema__(value, partial=partial))
 
-    def get_value(self):
-        return self.__schema__(self.__dict__)
+    def get_value(self, partial=True):
+        return self.__schema__(self.__dict__, partial=partial)
 
     def validate(self, partial=False):
         return self.__schema__.validate(self.__dict__, partial=partial)
@@ -103,6 +105,8 @@ def build_fields(cls):
         if v.get("default", Undefined) is not Undefined:
             setattr(cls, k, v["default"])
         fields[k] = v  # Field(name=k, required=k in required, schema=v)
+        if isinstance(v, dict) and "$ref" in v:
+            setattr(cls, k, RefDescriptor(k, v["$ref"].rsplit("/", 1)[-1]))
 
     return fields
 
@@ -136,7 +140,7 @@ def build_schema(cls, value):
     entries = value.get("entries", {})
     for k, annotation in cls.__annotations__.items():
         if isinstance(annotation, list):
-            entries[k] = {'type': list, 'items': {'type': annotation[0]}}
+            entries[k] = {"type": list, "items": {"type": annotation[0]}}
         else:
             entries[k] = {"type": annotation}
         v = getattr(cls, k, Undefined)
@@ -161,92 +165,24 @@ def build_schema(cls, value):
     return env.schema(name=name, value=value)
 
 
+class RefDescriptor:
+    def __init__(self, attribute_name, schema_name):
+        self.attribute_name = attribute_name
+        self.schema_name = schema_name
 
-class OLDSchematic:  # pylint: disable-msg=E0102
-    """
-    Construct that carries a schema (`__schema__`) and enforces its properties
-    to follow it.
-    """
+    def __get__(self, obj, type=None) -> Any:
+        value = obj.__dict__.get(self.attribute_name, Undefined)
+        if value is Undefined:
+            raise AttributeError(self.attribute_name)
+        schematic = obj.__schema__.env.schematics.get(self.schema_name)
+        if not schematic:
+            return value
+        if isinstance(value, schematic):
+            return value
+        return schematic(value)
 
-    __schema__ = None
-    __fields__ = []
+    def __set__(self, obj, value) -> None:
+        obj.__dict__.update(obj.__schema__({self.attribute_name: value}, partial=True))
 
-    def __init__(self, __value__=None, **kwargs):
-        super().__init__()
-        value = {}
-        if self.__schema__:
-            value.update(self.__schema__.value.get("default", {}))
-        if __value__:
-            value.update(__value__)
-        value.update(kwargs)
-        self.update_schema_value(value)
-
-    def __repr__(self):
-        value = self.get_schema_value()
-        return f"{self.__class__.__name__}({value!r})"
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
-    def validate(self, partial=False):
-        return self.__schema__.validate(self.__dict__, partial=partial)
-
-    def get_schema(self):
-        return self.__schema__
-
-    def get_schema_value(self, ignore_default=False, ignore_empty=True, ignore_internal=False):
-        """
-        Combines the schema-property values of this object with the inherited ones,
-        and returns it as a dict.
-
-        If `ignore_default` is `True` (default) properties with default values won't
-        be included.
-        """
-        value = {}
-        fields = self.__class__.__fields__
-        for k, field in fields.items():
-            if ignore_internal:
-                if field.config.get("internal") == False:
-                    continue
-            if field.has_value(self):
-                try:
-                    v = getattr(self, k)
-                except AttributeError:
-                    continue
-            elif not ignore_default:
-                try:
-                    v = getattr(self, k)
-                except AttributeError:
-                    continue
-            else:
-                continue
-            if v or ignore_empty is False:
-                value[k] = v
-        return value
-
-    def update_schema_value(self, value, only_empty=False):
-        for k, field in self.__class__.__fields__.items():
-            if k in value:
-                if not only_empty or field.has_value(self):
-                    setattr(self, k, value[k])
-
-    def marshal_as(self, system, ignore_internal=True, ignore_empty=True):
-        if system is not "json":
-            raise NotImplementedError(
-                "Marshalling is kinda fake right now, so we can only marshal to json"
-            )
-        value = self.get_schema_value(ignore_internal=ignore_internal, ignore_empty=ignore_empty)
-        try:
-            value = marshal_to_json(value)
-        except Exception as e:
-            print("Marshalling failed", self)
-            raise
-        return value
-
-    @classmethod
-    def get_field(cls, k, default=None):
-        return self.__class__.__fields__.get(k, default)
-
-    @classmethod
-    def has_field(cls, k):
-        return cls.get_field(k) is not None
+    def __delete__(self, obj) -> None:
+        del obj.__dict__[self.attribute_name]

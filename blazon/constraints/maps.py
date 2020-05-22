@@ -49,7 +49,7 @@ def required(schema, value):
 
         for key in value:
             if key not in instance:
-                raise ConstraintFailure()
+                raise ConstraintFailure(f"must have the required entry: {key}")
 
         return instance
 
@@ -61,17 +61,26 @@ def entry_handler(generator):
     def handler(instance, convert=False, partial=False):
         instance_keys = set(instance.keys())
         if convert:
-            results = {}
             for name, sub_schema, value in generator(instance):
+                if sub_schema is False:
+                    raise ConstraintFailure("additional properties not allowed")
+                if sub_schema is True:
+                    instance[name] = value
+                if hasattr(value, "__schema__"):
+                    value = value.__dict__
                 try:
-                    results[name] = sub_schema(value)
+                    instance[name] = sub_schema(value)
                 except ValidationError as e:
                     e.path.insert(0, "{" + name + "}")
                     raise
-            return results
+            return instance
 
         errors = {}
         for name, sub_schema, value in generator(instance):
+            if sub_schema is False:
+                raise ConstraintFailure("additional properties not allowed")
+            if sub_schema is True:
+                continue
             result = sub_schema.validate(value)
             if not result:
                 errors[name] = result
@@ -116,7 +125,10 @@ def pattern_entries(schema, value):
 def additional_entries(schema, value):
     patterns = [regex(k) for k in schema.get("pattern_entries", {}).keys()]
     names = set(k for k in schema.get("entries", {}).keys())
-    match_schema = schema.env.schema(value)
+    if value is False or value is True:
+        match_schema = value
+    else:
+        match_schema = schema.env.schema(value)
 
     def generator(instance):
         for name, value in instance.items():

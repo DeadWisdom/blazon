@@ -28,6 +28,7 @@ class Environment:
     ignore_formats: bool = field(default=False, repr=False)  # Ignore 'format' constraint
     ignore_these_formats: set = field(default_factory=set, repr=False)  # Ignore the given formats.
     constraints: ConstraintRegistry = field(default=constraints, repr=False)
+    schematics: Dict[str, "Schematic"] = field(default_factory=dict, repr=False)
     primitives: Dict[str, object] = field(
         repr=False,
         default_factory=lambda: {
@@ -63,19 +64,25 @@ class Environment:
         if strict is None:
             strict = self.strict
         if isinstance(value, Schema):
-            schema = value.copy(env=self, strict=strict)
+            schema = value.copy(env=self, strict=strict, name=name)
         else:
             schema = Schema(value, name=name, env=self, strict=strict)
-        key = name or hash(schema)
+        key = schema.name or hash(schema)
         self.schemas[key] = schema
-        schema.compile()
+        schema = schema.compile()
         return schema
+
+    def get_schema(self, key):
+        return self.schemas.get(key, None)
 
     def get_constraint(self, key):
         return self.constraints.get(native.inflection(key))
 
     def get_primitive_type(self, name: str) -> Type:
         return self.primitives[name]
+
+    def get_named_schemas(self):
+        return {k: v for k, v in self.schemas.items() if isinstance(k, str)}
 
     ### Internals ###
     def _recompile_schemas(self) -> None:

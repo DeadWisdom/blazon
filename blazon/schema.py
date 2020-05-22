@@ -98,14 +98,20 @@ class Schema:
                 handler = constraint(self, v)
                 if handler is None:
                     continue
+                if isinstance(handler, Schema):
+                    return handler
             except ConstraintNotApplicable:
                 if self.strict:
                     raise
+            except Exception as e:
+                raise
 
             if self.type is Undefined:
                 handler = wrap_applicable_checker(constraint, handler)
 
             self.constraints[k] = handler
+
+        return self
 
     def copy(self, **changes) -> "Schema":
         clone = replace(self, **changes)
@@ -117,13 +123,15 @@ class Schema:
         value = self.value[name]
         if not isinstance(err, ConstraintFailure):
             tb = sys.exc_info()[2]
-            err = ConstraintFailure(message=str(err), path=[name], sub_errors=[err]).with_traceback(tb)
+            err = ConstraintFailure(message=str(err), path=[name], sub_errors=[err]).with_traceback(
+                tb
+            )
         else:
             err.path.insert(0, name)
-        
+
         if not err.message:
             err.message = constraint.description.format(instance=instance, value=value)
-        
+
         err.schema = self
 
         return err
