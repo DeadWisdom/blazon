@@ -122,5 +122,33 @@ def test_bad_constraint():
 
 def test_from_file():
     class Person(Schematic):
-        __schema__ = json.from_file(os.path.join(os.path.dirname(__file__), "schemas", "Person.yaml"))
+        __schema__ = json.from_file(
+            os.path.join(os.path.dirname(__file__), "schemas", "Person.yaml")
+        )
 
+
+def test_subclass():
+    class Person(Schematic):
+        name: str
+        age: int = field(default=42, minimum=0)
+
+    class Human(Person):
+        pronoun: str
+
+    sam = Human(name="Sam", pronoun="them")
+    assert sam.validate()
+
+
+def test_abstract_subclass():
+    class Entity(Schematic):
+        def hello(self):
+            return "Hello %s" % self
+
+    class Person(Entity):
+        name: str = field(repr=True)
+        age: int = field(default=42, minimum=0)
+
+    beatrice = Person(name="Beatrice")
+    assert beatrice.validate()
+
+    assert beatrice.hello() == "Hello Person(name='Beatrice')"

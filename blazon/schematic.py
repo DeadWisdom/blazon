@@ -13,8 +13,15 @@ from .environment import native
 
 class Field:
     def __init__(
-        self, schema=None, default=Undefined, default_factory=Undefined, type=Undefined, **kwargs
+        self,
+        schema=None,
+        default=Undefined,
+        default_factory=Undefined,
+        type=Undefined,
+        repr=False,
+        **kwargs,
     ):
+        self.repr = repr
         self.value = schema or {}
         if default is not Undefined:
             self.value["default"] = default
@@ -33,7 +40,7 @@ class Field:
 
 
 def field(**kwargs):
-    return Field(kwargs)
+    return Field(**kwargs)
 
 
 Schematic = None
@@ -44,9 +51,9 @@ class SchematicType(type):
         new_cls = type.__new__(cls, name, bases, namespace)
         if Schematic is not None:
             new_cls.__schema__ = build_schema(new_cls, namespace.get("__schema__"))
-            new_cls.__schema_fields__ = build_fields(new_cls)
-            new_cls.__schema__.env.schematics[name] = new_cls
-
+            if new_cls.__schema__:
+                new_cls.__schema_fields__ = build_fields(new_cls)
+                new_cls.__schema__.env.schematics[name] = new_cls
         return new_cls
 
 
@@ -75,6 +82,19 @@ class Schematic(metaclass=SchematicType):
         self.set_value(value)
         self.__post_init__()
 
+    def __repr__(self):
+        parts = []
+        for attr in self.__schema__.get("__repr__", []):
+            value = getattr(self, attr, Undefined)
+            if value is Undefined:
+                continue
+            parts.append(f"{attr}={value!r}")
+        if parts:
+            values = ", ".join(parts)
+            return f"{self.__class__.__name__}({values})"
+        else:
+            return f"<{self.__class__.__name__}>"
+
     def __post_init__(self):
         ...
 
@@ -94,17 +114,18 @@ class Schematic(metaclass=SchematicType):
 
 def build_fields(cls):
     schema = cls.__schema__
+    if not schema:
+        return {}
+
     entries = schema.get("entries", None)
     if not entries:
         return {}
-
-    required = schema.get("required", None) or ()
 
     fields = {}
     for k, v in entries.items():
         if v.get("default", Undefined) is not Undefined:
             setattr(cls, k, v["default"])
-        fields[k] = v  # Field(name=k, required=k in required, schema=v)
+        fields[k] = v
         if isinstance(v, dict) and "$ref" in v:
             setattr(cls, k, RefDescriptor(k, v["$ref"].rsplit("/", 1)[-1]))
 
@@ -138,20 +159,29 @@ def build_schema(cls, value):
 
     ### Annotations ###
     entries = value.get("entries", {})
+    repr = []
     for k, annotation in cls.__annotations__.items():
+        if k.startswith("__"):
+            continue
         if isinstance(annotation, list):
             entries[k] = {"type": list, "items": {"type": annotation[0]}}
         else:
             entries[k] = {"type": annotation}
         v = getattr(cls, k, Undefined)
-        if v is not Undefined:
-            if isinstance(v, Field):
-                entries[k] = v.get_schema(env)
-            else:
-                entries[k]["default"] = v
+        if v is Undefined:
+            continue
+        if isinstance(v, Field):
+            entries[k] = v.get_schema(env)
+            if v.repr:
+                repr.append(k)
+        else:
+            entries[k]["default"] = v
 
     if entries:
         value["entries"] = entries
+
+    if repr:
+        value["__repr__"] = repr
 
     ### Required ###
     required = []
@@ -161,6 +191,9 @@ def build_schema(cls, value):
 
     if required:
         value["required"] = required
+
+    if not value:
+        return None
 
     return env.schema(name=name, value=value)
 

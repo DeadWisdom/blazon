@@ -166,3 +166,8 @@ def name(schema, value):
 @register(description="a function to create a default value")
 def default_factory(schema, value):
     return None
+
+
+@register(description="list of fields that should show up in the default __repr__")
+def __repr__(schema, value):
+    return None

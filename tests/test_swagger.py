@@ -1,7 +1,7 @@
 import os, pytest, yaml
 import blazon
 
-from blazon import Schematic, field, json
+from blazon import Schematic, json
 
 
 def test_from_file():
@@ -53,4 +53,3 @@ def test_from_file():
     petstore.info = {"title": "Swagger Petstore", "version": "0.0.1"}
     assert old_value == petstore.get_value()
     assert isinstance(petstore.info, Info)
-
