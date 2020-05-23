@@ -181,7 +181,7 @@ def build_schema(cls, value):
         value["entries"] = entries
 
     if repr:
-        value["__repr__"] = repr
+        value["__repr__"] = sorted(repr)
 
     ### Required ###
     required = []
@@ -190,7 +190,7 @@ def build_schema(cls, value):
             required.append(k)
 
     if required:
-        value["required"] = required
+        value["required"] = sorted(required)
 
     if not value:
         return None
