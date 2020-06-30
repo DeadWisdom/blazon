@@ -93,7 +93,7 @@ class Schema:
 
             try:
                 if not constraint.is_applicable_type(self.type):
-                    raise ConstraintNotApplicable()
+                    raise ConstraintNotApplicable(k)
 
                 handler = constraint(self, v)
                 if handler is None:

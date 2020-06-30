@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "blazon"
-version = "0.1.0"
+version = "0.1.0a"
 description = ""
 authors = ["Brantley Harris <deadwisdom@gmail.com>"]
 
