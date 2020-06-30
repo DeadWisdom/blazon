@@ -1,4 +1,4 @@
-import typing
+import typing, textwrap
 from collections.abc import Mapping, Iterable
 
 ### Hash function
@@ -76,7 +76,10 @@ class ConstraintFailure(ValidationError):
         self.path = path or []
         self.schema = schema
 
-    def __str__(self):
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.get_message()})"
+
+    def get_message(self):
         err = self.message or ""
         parts = [err]
         if self.path:
@@ -85,6 +88,19 @@ class ConstraintFailure(ValidationError):
         if self.schema and self.schema.name:
             parts.insert(0, self.schema.name)
         return " -- ".join(parts)
+
+    def __str__(self):
+        parts = [self.get_message()]
+        if self.sub_errors:
+            if isinstance(self.sub_errors, dict):
+                for sub, err in self.sub_errors.items():
+                    err = textwrap.indent(str(err), "    ")
+                    parts.append(f"  - {sub}:\n{err}")
+            else:
+                for err in self.sub_errors:
+                    # err = textwrap.indent(str(err), "    ")
+                    parts.append(f"  - {err}")
+        return "\n".join(parts)
 
 
 class SchemaValidationResult(ValidationError):

@@ -103,6 +103,8 @@ class Schema:
             except ConstraintNotApplicable:
                 if self.strict:
                     raise
+                else:
+                    continue
             except Exception as e:
                 raise
 
@@ -162,7 +164,7 @@ class Schema:
             except ConstraintNotApplicable:
                 if self.strict:
                     raise self.build_error(name, err, instance)
-            except (ValueError, AssertionError, ConstraintFailure) as err:
+            except (ValueError, AssertionError) as err:
                 raise self.build_error(name, err, instance)
 
         return instance

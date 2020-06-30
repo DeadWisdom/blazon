@@ -47,6 +47,8 @@ def required(schema, value):
         if partial:
             return instance
 
+        value.sort()
+
         for key in value:
             if key not in instance:
                 raise ConstraintFailure(f"must have the required entry: {key}")
@@ -63,7 +65,7 @@ def entry_handler(generator):
         if convert:
             for name, sub_schema, value in generator(instance):
                 if sub_schema is False:
-                    raise ConstraintFailure("additional properties not allowed")
+                    raise ConstraintFailure("additional properties not allowed: %r" % name)
                 if sub_schema is True:
                     instance[name] = value
                 if hasattr(value, "__schema__"):
@@ -94,6 +96,10 @@ def entry_handler(generator):
 @register(description="must have the matching items", require=[Mapping])
 def entries(schema, value):
     schema_map = dict((k, schema.env.schema(v)) for k, v in value.items())
+
+    for name, schema in schema_map.items():
+        if schema is None:
+            raise RuntimeError("Schema value is None")
 
     def generator(instance):
         for name, schema in schema_map.items():
